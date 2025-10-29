@@ -208,10 +208,10 @@ export async function replyToTweetsWorkflow(config: WorkflowConfig) {
         '🤖 Generating AI reply'
       );
 
+      // Pass systemPrompt directly from config - frontend will provide it
       const reply = await generateTweetReply(
         ctx.selectedTweet.text,
-        ctx.systemPrompt,
-        !isDryRun // In dry-run mode, don't use default prompt
+        ctx.systemPrompt
       );
 
       logger.info({ replyLength: reply.length, reply: reply.substring(0, 100) }, '✅ Generated reply');

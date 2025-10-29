@@ -163,11 +163,11 @@ export async function postTweetsWorkflow(config: WorkflowConfig) {
       let tweets: string[];
 
       if (ctx.isThread) {
-        // Use generateThread for proper thread creation
+        // Pass systemPrompt directly from config - frontend will provide it
         tweets = await generateThread(fullPrompt, threadLength, ctx.systemPrompt);
         logger.info({ tweetCount: tweets.length }, `✅ Generated thread with ${tweets.length} tweets`);
       } else {
-        // Use generateTweet for single tweet
+        // Pass systemPrompt directly from config - frontend will provide it
         const generatedText = await generateTweet(fullPrompt, ctx.systemPrompt);
         tweets = [generatedText];
         logger.info({ tweetLength: generatedText.length }, '✅ Generated single tweet');

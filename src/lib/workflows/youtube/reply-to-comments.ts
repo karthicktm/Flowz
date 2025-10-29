@@ -285,11 +285,11 @@ export async function replyToYouTubeCommentsWorkflow(config: WorkflowConfig = {}
       for (const comment of ctx.selectedComments) {
         try {
           // Generate reply using OpenAI (reuse tweet reply function)
+          // Pass systemPrompt directly from config - frontend will provide it
           const prompt = `Video: "${comment.videoTitle}"\nComment by ${comment.authorDisplayName}: "${comment.text}"`;
           const generatedReply = await generateTweetReply(
             prompt,
-            config.systemPrompt,
-            !isDryRun
+            config.systemPrompt
           );
 
           repliesData.push({
