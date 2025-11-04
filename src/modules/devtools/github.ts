@@ -427,3 +427,94 @@ export async function addIssueComment(
     htmlUrl: response.data.html_url,
   };
 }
+
+/**
+ * Get trending repositories
+ * Uses GitHub public search API to find repos created/updated recently with high stars
+ * No authentication required - uses public API
+ */
+export async function getTrendingRepositories(options?: {
+  language?: string;
+  since?: 'daily' | 'weekly' | 'monthly';
+  per_page?: number;
+}): Promise<Array<{
+  name: string;
+  fullName: string;
+  owner: string;
+  description: string;
+  htmlUrl: string;
+  stargazersCount: number;
+  language: string;
+  forksCount: number;
+  createdAt: string;
+}>> {
+  const since = options?.since || 'weekly';
+  const per_page = Math.min(options?.per_page || 30, 100); // GitHub max is 100
+
+  // Calculate date range based on 'since' parameter
+  const dateRanges = {
+    daily: 1,
+    weekly: 7,
+    monthly: 30,
+  };
+
+  const daysAgo = dateRanges[since];
+  const date = new Date();
+  date.setDate(date.getDate() - daysAgo);
+  const dateStr = date.toISOString().split('T')[0];
+
+  // Build search query
+  let query = `created:>${dateStr} stars:>10`;
+
+  if (options?.language) {
+    query += ` language:${options.language}`;
+  }
+
+  logger.info({ query, since, language: options?.language }, 'Getting trending GitHub repositories');
+
+  // Use public GitHub API (no auth required)
+  const url = new URL('https://api.github.com/search/repositories');
+  url.searchParams.set('q', query);
+  url.searchParams.set('sort', 'stars');
+  url.searchParams.set('order', 'desc');
+  url.searchParams.set('per_page', per_page.toString());
+
+  const response = await fetch(url.toString(), {
+    headers: {
+      'Accept': 'application/vnd.github.v3+json',
+      'User-Agent': 'b0t-workflow-automation',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
+  }
+
+  const data = await response.json() as {
+    items: Array<{
+      name: string;
+      full_name: string;
+      owner: { login: string } | null;
+      description: string | null;
+      html_url: string;
+      stargazers_count: number;
+      language: string | null;
+      forks_count: number;
+      created_at: string;
+    }>;
+  };
+
+  logger.info({ resultCount: data.items.length }, 'Trending repositories retrieved');
+
+  return data.items.map((repo) => ({
+    name: repo.name,
+    fullName: repo.full_name,
+    owner: repo.owner?.login || 'Unknown',
+    description: repo.description || '',
+    htmlUrl: repo.html_url,
+    stargazersCount: repo.stargazers_count,
+    language: repo.language || 'Unknown',
+    forksCount: repo.forks_count,
+    createdAt: repo.created_at,
+  }));
+}

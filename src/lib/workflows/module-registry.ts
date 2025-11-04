@@ -1126,6 +1126,12 @@ export function getModuleRegistry(): ModuleCategory[] {
               signature: 'mask(str, visibleChars?, maskChar?)',
               example: 'mask("john@example.com", 4) → "john****example.com"',
             },
+            {
+              name: 'concat',
+              description: 'Concatenate multiple strings together',
+              signature: 'concat(strings, separator?)',
+              example: 'concat(["Hello", "World"], " ") → "Hello World"',
+            },
           ],
         },
         {
@@ -3132,6 +3138,18 @@ export function getModuleRegistry(): ModuleCategory[] {
     {
       name: 'Developer Tools',
       modules: [
+        { name: 'github', functions: [
+            { name: 'getTrendingRepositories', description: 'Get trending GitHub repositories', signature: 'getTrendingRepositories({ language?, since?, per_page? })' },
+            { name: 'createIssue', description: 'Create GitHub issue', signature: 'createIssue({ owner, repo, title, body?, labels?, assignees? })' },
+            { name: 'updateIssue', description: 'Update GitHub issue', signature: 'updateIssue(owner, repo, issueNumber, { title?, body?, state?, labels? })' },
+            { name: 'listIssues', description: 'List repository issues', signature: 'listIssues(owner, repo, { state?, labels?, per_page? })' },
+            { name: 'createPullRequest', description: 'Create pull request', signature: 'createPullRequest(owner, repo, { title, head, base, body?, draft? })' },
+            { name: 'listPullRequests', description: 'List pull requests', signature: 'listPullRequests(owner, repo, state?)' },
+            { name: 'createRelease', description: 'Create release', signature: 'createRelease(owner, repo, { tagName, name?, body?, draft?, prerelease? })' },
+            { name: 'getRepository', description: 'Get repository details', signature: 'getRepository(owner, repo)' },
+            { name: 'searchRepositories', description: 'Search repositories', signature: 'searchRepositories(query, sort?, per_page?)' },
+            { name: 'addIssueComment', description: 'Add comment to issue', signature: 'addIssueComment(owner, repo, issueNumber, body)' },
+          ]},
         { name: 'github-actions', functions: [
             { name: 'triggerWorkflow', description: 'Trigger workflow', signature: 'triggerWorkflow({ owner, repo, workflowId, ref, inputs? })' },
             { name: 'getWorkflowRun', description: 'Get workflow run', signature: 'getWorkflowRun({ owner, repo, runId })' },

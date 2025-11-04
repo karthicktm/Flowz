@@ -259,3 +259,15 @@ export function mask(
   const middle = maskChar.repeat(str.length - visibleChars * 2);
   return start + middle + end;
 }
+
+/**
+ * Concatenate multiple strings together
+ * @param strings - Array of strings to concatenate
+ * @param separator - Optional separator between strings (default: '')
+ * @example
+ * concat(['Hello', 'World'], ' ') => 'Hello World'
+ * concat(['# Title\n\n', 'Content here']) => '# Title\n\nContent here'
+ */
+export function concat(strings: string[], separator: string = ''): string {
+  return strings.join(separator);
+}

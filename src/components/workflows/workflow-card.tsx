@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { Download, Trash2, Workflow as WorkflowIcon, Play, Key, MessageSquare, Webhook, Clock, Send, Sliders, BarChart3, Table2, Image as ImageIcon, FileText, Braces, List } from 'lucide-react';
 import { WorkflowListItem } from '@/types/workflows';
 import { WorkflowExecutionDialog } from './workflow-execution-dialog';
@@ -23,6 +24,8 @@ interface WorkflowCardProps {
 
 export function WorkflowCard({ workflow, onDeleted, onExport, onViewHistory, onUpdated }: WorkflowCardProps) {
   const [deleting, setDeleting] = useState(false);
+  const [toggling, setToggling] = useState(false);
+  const [optimisticStatus, setOptimisticStatus] = useState<string | null>(null);
   const [executionDialogOpen, setExecutionDialogOpen] = useState(false);
   const [credentialsConfigOpen, setCredentialsConfigOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
@@ -75,6 +78,42 @@ export function WorkflowCard({ workflow, onDeleted, onExport, onViewHistory, onU
     // Just refresh the workflows list, don't execute again
     // The dialog already handled the execution
     onUpdated?.();
+  };
+
+  const handleToggleStatus = async (checked: boolean) => {
+    const newStatus = checked ? 'active' : 'draft';
+
+    // Optimistic update - update UI immediately
+    setOptimisticStatus(newStatus);
+    setToggling(true);
+
+    try {
+      const response = await fetch(`/api/workflows/${workflow.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update workflow status');
+      }
+
+      toast.success(`Workflow ${checked ? 'activated' : 'deactivated'}`, {
+        description: `"${workflow.name}" is now ${newStatus}.`,
+      });
+      onUpdated?.();
+    } catch (error) {
+      // Revert optimistic update on error
+      setOptimisticStatus(null);
+      console.error('Failed to toggle workflow status:', error);
+      toast.error('Failed to update workflow', {
+        description: error instanceof Error ? error.message : 'Unknown error occurred',
+      });
+    } finally {
+      setToggling(false);
+    }
   };
 
   const formatDate = (date: Date | null) => {
@@ -152,6 +191,17 @@ export function WorkflowCard({ workflow, onDeleted, onExport, onViewHistory, onU
   return (
     <Card className="group relative overflow-hidden rounded-lg border border-border/50 bg-surface/80 backdrop-blur-sm shadow-sm hover:shadow-lg hover:border-primary/30 transition-all duration-300 hover:scale-[1.02]">
       <CardHeader className="pb-3 pt-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Switch
+            checked={(optimisticStatus || workflow.status) === 'active'}
+            onCheckedChange={handleToggleStatus}
+            disabled={toggling}
+            className="data-[state=checked]:!bg-green-500 dark:data-[state=checked]:!bg-green-600 data-[state=unchecked]:!bg-gray-300 dark:data-[state=unchecked]:!bg-gray-600"
+          />
+          <span className={`text-xs font-medium ${(optimisticStatus || workflow.status) === 'active' ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>
+            {(optimisticStatus || workflow.status) === 'active' ? 'Active' : 'Inactive'}
+          </span>
+        </div>
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <WorkflowIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />

@@ -1,5 +1,10 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
+import { Copy, Download, Check } from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'sonner';
+
 interface Column {
   key: string;
   label: string;
@@ -14,6 +19,9 @@ interface DataTableProps {
 }
 
 export function DataTable({ data, config }: DataTableProps) {
+  // Hook must be at the top before any returns
+  const [copied, setCopied] = useState(false);
+
   // Handle single object with nested array
   if (!Array.isArray(data) && typeof data === 'object' && data !== null) {
     const dataObj = data as Record<string, unknown>;
@@ -30,6 +38,7 @@ export function DataTable({ data, config }: DataTableProps) {
     }
 
     // If still not an array after checking, show as key-value pairs
+    // Note: Custom columns are ignored for single objects as they only apply to arrays
     if (!Array.isArray(data)) {
       const entries = Object.entries(dataObj);
       return (
@@ -55,7 +64,13 @@ export function DataTable({ data, config }: DataTableProps) {
 
   // Handle array of objects
   if (!Array.isArray(data)) {
-    return <div className="text-sm text-muted-foreground">Invalid table data</div>;
+    return (
+      <div className="rounded-lg border border-border/50 bg-surface/50 p-4">
+        <p className="text-sm text-muted-foreground">
+          Table display requires array data. Use <code className="text-xs bg-muted px-1 py-0.5 rounded">type: &quot;text&quot;</code> or <code className="text-xs bg-muted px-1 py-0.5 rounded">type: &quot;json&quot;</code> for single values.
+        </p>
+      </div>
+    );
   }
 
   if (data.length === 0) {
@@ -65,8 +80,76 @@ export function DataTable({ data, config }: DataTableProps) {
   // Infer columns if not provided
   const columns = config?.columns || inferColumnsFromData(data);
 
+  // Export functions
+  const convertToCSV = () => {
+    const headers = columns.map((col) => col.label).join(',');
+    const rows = data
+      .map((row) =>
+        columns
+          .map((col) => {
+            const value = getNestedValue(row, col.key);
+            const stringValue = value === null || value === undefined ? '' : String(value);
+            // Escape quotes and wrap in quotes if contains comma/quote/newline
+            return /[",\n]/.test(stringValue)
+              ? `"${stringValue.replace(/"/g, '""')}"`
+              : stringValue;
+          })
+          .join(',')
+      )
+      .join('\n');
+    return `${headers}\n${rows}`;
+  };
+
+  const handleCopy = async () => {
+    try {
+      const csv = convertToCSV();
+      await navigator.clipboard.writeText(csv);
+      setCopied(true);
+      toast.success('Copied to clipboard');
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error('Failed to copy to clipboard');
+    }
+  };
+
+  const handleDownload = () => {
+    const csv = convertToCSV();
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'table-data.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('Downloaded as table-data.csv');
+  };
+
   return (
-    <div className="w-full -mx-6">
+    <div className="w-full -mx-6 space-y-3">
+      <div className="flex justify-end px-6">
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleCopy}
+            className="h-8 gap-2"
+          >
+            {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+            {copied ? 'Copied' : 'Copy CSV'}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleDownload}
+            className="h-8 gap-2"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Download CSV
+          </Button>
+        </div>
+      </div>
       <div className="block max-w-full overflow-x-auto">
         <table className="min-w-full border-collapse">
           <thead>

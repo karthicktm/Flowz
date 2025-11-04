@@ -18,6 +18,14 @@ export interface WorkflowExport {
       inputs: Record<string, unknown>;
       outputAs?: string;
     }>;
+    outputDisplay?: {
+      type: 'table' | 'list' | 'text' | 'markdown' | 'json' | 'image' | 'images';
+      columns?: Array<{
+        key: string;
+        label: string;
+        type?: 'text' | 'link' | 'date' | 'number' | 'image';
+      }>;
+    };
   };
   metadata?: {
     author?: string;
@@ -41,6 +49,14 @@ export function exportWorkflow(
       inputs: Record<string, unknown>;
       outputAs?: string;
     }>;
+    outputDisplay?: {
+      type: 'table' | 'list' | 'text' | 'markdown' | 'json' | 'image' | 'images';
+      columns?: Array<{
+        key: string;
+        label: string;
+        type?: 'text' | 'link' | 'date' | 'number' | 'image';
+      }>;
+    };
   },
   metadata?: {
     author?: string;
@@ -78,6 +94,14 @@ export function exportWorkflowToJSON(
       inputs: Record<string, unknown>;
       outputAs?: string;
     }>;
+    outputDisplay?: {
+      type: 'table' | 'list' | 'text' | 'markdown' | 'json' | 'image' | 'images';
+      columns?: Array<{
+        key: string;
+        label: string;
+        type?: 'text' | 'link' | 'date' | 'number' | 'image';
+      }>;
+    };
   },
   metadata?: {
     author?: string;

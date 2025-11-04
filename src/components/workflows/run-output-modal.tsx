@@ -40,7 +40,15 @@ export function RunOutputModal({
   if (!run) return null;
 
   // Extract outputDisplay config from workflow config if provided
-  const outputDisplayHint = workflowConfig?.outputDisplay as OutputDisplayConfig | undefined;
+  // Transform from workflow JSON format to OutputDisplayConfig format
+  const outputDisplayHint = workflowConfig?.outputDisplay
+    ? ({
+        type: (workflowConfig.outputDisplay as Record<string, unknown>).type as string,
+        config: {
+          columns: (workflowConfig.outputDisplay as Record<string, unknown>).columns,
+        },
+      } as OutputDisplayConfig)
+    : undefined;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

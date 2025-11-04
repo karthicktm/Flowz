@@ -48,6 +48,32 @@ export async function PATCH(
 
       const workflow = workflows[0];
 
+      // Update status
+      if (body.status !== undefined) {
+        await sqliteDb
+          .update(workflowsTableSQLite)
+          .set({
+            status: body.status,
+          })
+          .where(
+            and(
+              eq(workflowsTableSQLite.id, id),
+              eq(workflowsTableSQLite.userId, session.user.id)
+            )
+          );
+
+        logger.info(
+          {
+            userId: session.user.id,
+            workflowId: id,
+            status: body.status,
+          },
+          'Workflow status updated'
+        );
+
+        return NextResponse.json({ success: true, status: body.status });
+      }
+
       // Update trigger config
       if (body.trigger) {
         const updatedTrigger = {
@@ -105,6 +131,32 @@ export async function PATCH(
       }
 
       const workflow = workflows[0];
+
+      // Update status
+      if (body.status !== undefined) {
+        await postgresDb
+          .update(workflowsTablePostgres)
+          .set({
+            status: body.status,
+          })
+          .where(
+            and(
+              eq(workflowsTablePostgres.id, id),
+              eq(workflowsTablePostgres.userId, session.user.id)
+            )
+          );
+
+        logger.info(
+          {
+            userId: session.user.id,
+            workflowId: id,
+            status: body.status,
+          },
+          'Workflow status updated'
+        );
+
+        return NextResponse.json({ success: true, status: body.status });
+      }
 
       // Update trigger config
       if (body.trigger) {
