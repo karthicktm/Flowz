@@ -113,6 +113,103 @@ function validateVariableReferences(workflow: WorkflowExport): string[] {
   return errors;
 }
 
+function validateTriggerConfig(workflow: WorkflowExport): string[] {
+  const errors: string[] = [];
+  const { trigger } = workflow;
+
+  if (!trigger) {
+    errors.push('❌ Workflow is missing trigger configuration');
+    return errors;
+  }
+
+  // Validate chat-input trigger has fields
+  if (trigger.type === 'chat-input') {
+    const fields = (trigger.config as { fields?: unknown }).fields;
+
+    if (!fields) {
+      errors.push('❌ chat-input trigger is missing required "fields" array in config');
+      errors.push('   💡 Add fields array to trigger.config:');
+      errors.push('   📝 Example:');
+      errors.push('      "trigger": {');
+      errors.push('        "type": "chat-input",');
+      errors.push('        "config": {');
+      errors.push('          "fields": [');
+      errors.push('            {');
+      errors.push('              "id": "1",');
+      errors.push('              "label": "Your Label",');
+      errors.push('              "key": "fieldName",');
+      errors.push('              "type": "text",');
+      errors.push('              "required": true,');
+      errors.push('              "placeholder": "Enter value..."');
+      errors.push('            }');
+      errors.push('          ]');
+      errors.push('        }');
+      errors.push('      }');
+      return errors;
+    }
+
+    if (!Array.isArray(fields)) {
+      errors.push('❌ chat-input trigger.config.fields must be an array');
+      return errors;
+    }
+
+    if (fields.length === 0) {
+      errors.push('❌ chat-input trigger.config.fields cannot be empty - at least one field is required');
+      errors.push('   💡 Add at least one field to the fields array');
+      return errors;
+    }
+
+    // Validate each field has required properties
+    fields.forEach((field: unknown, index: number) => {
+      if (typeof field !== 'object' || field === null) {
+        errors.push(`❌ Field ${index + 1} must be an object`);
+        return;
+      }
+
+      const f = field as Record<string, unknown>;
+      const requiredProps = ['id', 'label', 'key', 'type', 'required'];
+      const missingProps = requiredProps.filter(prop => !(prop in f));
+
+      if (missingProps.length > 0) {
+        errors.push(`❌ Field ${index + 1} (${f.label || f.key || 'unnamed'}) is missing: ${missingProps.join(', ')}`);
+      }
+
+      // Validate type
+      const validTypes = ['text', 'textarea', 'number', 'date', 'select', 'checkbox'];
+      if (f.type && !validTypes.includes(f.type as string)) {
+        errors.push(`❌ Field ${index + 1} has invalid type "${f.type}". Valid types: ${validTypes.join(', ')}`);
+      }
+
+      // Validate select type has options
+      if (f.type === 'select' && (!f.options || !Array.isArray(f.options) || f.options.length === 0)) {
+        errors.push(`❌ Field ${index + 1} (${f.label}) has type "select" but is missing options array`);
+      }
+    });
+  }
+
+  // Validate cron trigger has schedule
+  if (trigger.type === 'cron') {
+    const schedule = (trigger.config as { schedule?: unknown }).schedule;
+    if (!schedule) {
+      errors.push('❌ cron trigger is missing required "schedule" in config');
+      errors.push('   💡 Add schedule to trigger.config:');
+      errors.push('      "config": { "schedule": "0 9 * * *" }');
+    }
+  }
+
+  // Validate chat trigger has inputVariable
+  if (trigger.type === 'chat') {
+    const inputVariable = (trigger.config as { inputVariable?: unknown }).inputVariable;
+    if (!inputVariable) {
+      errors.push('❌ chat trigger is missing required "inputVariable" in config');
+      errors.push('   💡 Add inputVariable to trigger.config:');
+      errors.push('      "config": { "inputVariable": "userMessage" }');
+    }
+  }
+
+  return errors;
+}
+
 function validateOutputDisplay(workflow: WorkflowExport): string[] {
   const warnings: string[] = [];
   const { config } = workflow;
@@ -240,6 +337,18 @@ async function validateWorkflow(workflowJson: string): Promise<void> {
     }
 
     console.log('✅ Basic structure validation passed');
+
+    // Validate trigger configuration
+    console.log('\n🔍 Checking trigger configuration...');
+    const triggerErrors = validateTriggerConfig(workflow);
+    if (triggerErrors.length > 0) {
+      console.error('\n❌ Trigger configuration errors:\n');
+      triggerErrors.forEach((error) => {
+        console.error(`   ${error}`);
+      });
+      process.exit(1);
+    }
+    console.log('✅ Trigger configuration is valid');
 
     // Validate module paths
     console.log('\n🔍 Checking module paths...');
