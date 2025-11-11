@@ -124,25 +124,12 @@ if [ ! -f .env.local ]; then
     print_warning ".env.local not found - creating from example"
     cp .env.local.example .env.local
     print_success ".env.local created"
-
-    echo ""
-    echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${YELLOW}IMPORTANT: You need to configure encryption keys!${NC}"
-    echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo ""
-    echo "Please add the following to .env.local:"
-    echo ""
-    echo "1. AUTH_SECRET - Generate with: openssl rand -base64 32"
-    echo "2. ENCRYPTION_KEY - Generate with: openssl rand -base64 32"
-    echo ""
-    echo "Note: Platform API keys (OpenAI, Twitter, etc.) are managed through"
-    echo "the web UI at Settings → Credentials after setup."
-    echo ""
-    echo -e "${YELLOW}The script will pause here. Press Enter after you've configured these...${NC}"
-    read -p ""
 else
     print_success ".env.local already exists"
 fi
+
+echo ""
+echo "Configuring required secrets..."
 
 # Check if required variables are set
 source .env.local 2>/dev/null || true
@@ -172,6 +159,11 @@ if [ -z "$ENCRYPTION_KEY" ] || [ "$ENCRYPTION_KEY" == "your-encryption-key-here"
     fi
     print_success "Generated ENCRYPTION_KEY"
 fi
+
+echo ""
+echo "Note: Platform API keys (OpenAI, Twitter, etc.) are managed through"
+echo "the web UI at Settings → Credentials after setup."
+echo ""
 
 # Ensure DATABASE_URL and REDIS_URL are set for Docker
 if ! grep -q "DATABASE_URL=postgresql://postgres:postgres@localhost:5433/social_cat_dev" .env.local; then
