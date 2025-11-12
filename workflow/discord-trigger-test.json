@@ -1,0 +1,97 @@
+{
+  "version": "1.0",
+  "name": "Discord Message Analyzer",
+  "description": "Test workflow that analyzes incoming Discord messages through 5 steps: word count analysis, AI categorization, emoji suggestion, reaction addition, and response",
+  "trigger": {
+    "type": "discord",
+    "config": {}
+  },
+  "config": {
+    "steps": [
+      {
+        "id": "step1",
+        "module": "utilities.javascript.execute",
+        "inputs": {
+          "options": {
+            "code": "const message = msg; const words = message.split(/\\s+/).filter(w => w.length > 0); const chars = message.length; const sentences = message.split(/[.!?]+/).filter(s => s.trim().length > 0).length; return { wordCount: words.length, charCount: chars, sentenceCount: sentences, avgWordLength: chars / words.length };",
+            "context": {
+              "msg": "{{trigger.message}}"
+            }
+          }
+        },
+        "outputAs": "stats"
+      },
+      {
+        "id": "step2",
+        "module": "ai.ai-sdk.generateText",
+        "inputs": {
+          "options": {
+            "model": "gpt-4o-mini",
+            "prompt": "Categorize this Discord message into ONE category: question, statement, greeting, command, or other. Message: {{trigger.message}}. Reply with just the category name."
+          }
+        },
+        "outputAs": "category"
+      },
+      {
+        "id": "step3",
+        "module": "utilities.javascript.execute",
+        "inputs": {
+          "options": {
+            "code": "const cat = categoryText.toLowerCase(); const emojiMap = { question: '❓', statement: '💬', greeting: '👋', command: '⚡', other: '📝' }; return { emoji: emojiMap[cat] || '📝', categoryName: cat };",
+            "context": {
+              "categoryText": "{{category.content}}"
+            }
+          }
+        },
+        "outputAs": "emoji"
+      },
+      {
+        "id": "step4",
+        "module": "communication.discord.addReaction",
+        "inputs": {
+          "channelId": "{{trigger.channelId}}",
+          "messageId": "{{trigger.messageId}}",
+          "emoji": "{{emoji.emoji}}"
+        },
+        "outputAs": "reaction"
+      },
+      {
+        "id": "step5",
+        "module": "communication.discord.sendEmbed",
+        "inputs": {
+          "channelId": "{{trigger.channelId}}",
+          "embed": {
+            "title": "Message Analysis",
+            "description": "Analysis results for your message",
+            "color": 5814783,
+            "fields": [
+              {
+                "name": "Stats",
+                "value": "Words: {{stats.wordCount}} | Chars: {{stats.charCount}} | Sentences: {{stats.sentenceCount}}",
+                "inline": false
+              },
+              {
+                "name": "Category",
+                "value": "{{emoji.categoryName}} {{emoji.emoji}}",
+                "inline": true
+              },
+              {
+                "name": "Avg Word Length",
+                "value": "{{stats.avgWordLength}}",
+                "inline": true
+              }
+            ]
+          }
+        },
+        "outputAs": "embedSent"
+      }
+    ],
+    "returnValue": "{{embedSent}}",
+    "outputDisplay": {
+      "type": "json"
+    }
+  },
+  "metadata": {
+    "requiresCredentials": ["discord", "openai"]
+  }
+}

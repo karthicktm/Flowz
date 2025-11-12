@@ -1,0 +1,35 @@
+{
+  "version": "1.0",
+  "name": "Chat Math Agent",
+  "description": "Chat interface that sends math questions to OpenAI for solving",
+  "trigger": {
+    "type": "chat",
+    "config": {
+      "inputVariable": "userMessage"
+    }
+  },
+  "config": {
+    "steps": [
+      {
+        "id": "solve_math",
+        "module": "ai.ai-sdk.generateText",
+        "inputs": {
+          "options": {
+            "model": "gpt-4o-mini",
+            "prompt": "{{trigger.userMessage}}",
+            "system": "You are a helpful math assistant. Solve the math problem step by step, showing your work clearly. Explain your reasoning and provide the final answer."
+          }
+        },
+        "outputAs": "mathSolution"
+      }
+    ],
+    "returnValue": "{{mathSolution.content}}",
+    "outputDisplay": {
+      "type": "markdown",
+      "content": "{{mathSolution.content}}"
+    }
+  },
+  "metadata": {
+    "requiresCredentials": ["openai"]
+  }
+}

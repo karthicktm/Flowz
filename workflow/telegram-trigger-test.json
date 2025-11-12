@@ -1,0 +1,77 @@
+{
+  "version": "1.0",
+  "name": "Telegram Message Processor",
+  "description": "Test workflow that processes incoming Telegram messages through 5 steps: AI analysis, sentiment scoring, keyword extraction, response generation, and reply",
+  "trigger": {
+    "type": "telegram",
+    "config": {}
+  },
+  "config": {
+    "steps": [
+      {
+        "id": "step1",
+        "module": "ai.ai-sdk.generateText",
+        "inputs": {
+          "options": {
+            "model": "gpt-4o-mini",
+            "prompt": "Analyze this message and provide a brief summary in 1-2 sentences: {{trigger.message}}"
+          }
+        },
+        "outputAs": "analysis"
+      },
+      {
+        "id": "step2",
+        "module": "utilities.javascript.execute",
+        "inputs": {
+          "options": {
+            "code": "const message = msg.toLowerCase(); let sentiment = 0; const positiveWords = ['great', 'good', 'love', 'excellent', 'amazing', 'wonderful', 'fantastic']; const negativeWords = ['bad', 'hate', 'terrible', 'awful', 'horrible', 'worst']; positiveWords.forEach(word => { if (message.includes(word)) sentiment++; }); negativeWords.forEach(word => { if (message.includes(word)) sentiment--; }); return { sentiment: sentiment, label: sentiment > 0 ? 'positive' : sentiment < 0 ? 'negative' : 'neutral' };",
+            "context": {
+              "msg": "{{trigger.message}}"
+            }
+          }
+        },
+        "outputAs": "sentiment"
+      },
+      {
+        "id": "step3",
+        "module": "utilities.javascript.execute",
+        "inputs": {
+          "options": {
+            "code": "const message = msg; const words = message.split(/\\s+/).filter(word => word.length > 4); const wordCounts = {}; words.forEach(word => { const lower = word.toLowerCase(); wordCounts[lower] = (wordCounts[lower] || 0) + 1; }); const sortedWords = Object.entries(wordCounts).sort((a, b) => b[1] - a[1]).slice(0, 5); return { keywords: sortedWords.map(([word]) => word), counts: sortedWords.map(([word, count]) => count) };",
+            "context": {
+              "msg": "{{trigger.message}}"
+            }
+          }
+        },
+        "outputAs": "keywords"
+      },
+      {
+        "id": "step4",
+        "module": "ai.ai-sdk.generateText",
+        "inputs": {
+          "options": {
+            "model": "gpt-4o-mini",
+            "prompt": "Generate a friendly response to this message. The message has a {{sentiment.label}} sentiment. Message: {{trigger.message}}"
+          }
+        },
+        "outputAs": "response"
+      },
+      {
+        "id": "step5",
+        "module": "communication.telegram.sendMarkdown",
+        "inputs": {
+          "chatId": "{{trigger.chatId}}",
+          "text": "*Analysis Complete*\n\nSummary: {{analysis.content}}\n\nSentiment: {{sentiment.label}} (score: {{sentiment.sentiment}})\n\nTop Keywords: {{keywords.keywords}}\n\nResponse: {{response.content}}"
+        },
+        "outputAs": "sent"
+      }
+    ],
+    "returnValue": "{{sent}}",
+    "outputDisplay": {
+      "type": "json"
+    }
+  },
+  "metadata": {
+    "requiresCredentials": ["telegram", "openai"]
+  }
+}

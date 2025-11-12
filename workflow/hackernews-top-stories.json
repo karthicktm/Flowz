@@ -1,0 +1,107 @@
+{
+  "version": "1.0",
+  "name": "HackerNews Top Stories Today",
+  "description": "Fetches the top 20 HackerNews posts from today and displays them in a table",
+  "trigger": {
+    "type": "manual",
+    "config": {}
+  },
+  "config": {
+    "steps": [
+      {
+        "id": "step1",
+        "module": "utilities.http.httpGet",
+        "inputs": {
+          "url": "https://hacker-news.firebaseio.com/v0/topstories.json"
+        },
+        "outputAs": "topStoryIds"
+      },
+      {
+        "id": "step2",
+        "module": "utilities.array-utils.first",
+        "inputs": {
+          "arr": "{{topStoryIds.data}}",
+          "count": 4
+        },
+        "outputAs": "top4Ids"
+      },
+      {
+        "id": "step3",
+        "module": "utilities.http.httpGet",
+        "inputs": {
+          "url": "https://hacker-news.firebaseio.com/v0/item/{{top4Ids[0]}}.json"
+        },
+        "outputAs": "story1"
+      },
+      {
+        "id": "step4",
+        "module": "utilities.http.httpGet",
+        "inputs": {
+          "url": "https://hacker-news.firebaseio.com/v0/item/{{top4Ids[1]}}.json"
+        },
+        "outputAs": "story2"
+      },
+      {
+        "id": "step5",
+        "module": "utilities.http.httpGet",
+        "inputs": {
+          "url": "https://hacker-news.firebaseio.com/v0/item/{{top4Ids[2]}}.json"
+        },
+        "outputAs": "story3"
+      },
+      {
+        "id": "step6",
+        "module": "utilities.http.httpGet",
+        "inputs": {
+          "url": "https://hacker-news.firebaseio.com/v0/item/{{top4Ids[3]}}.json"
+        },
+        "outputAs": "story4"
+      },
+      {
+        "id": "step7",
+        "module": "utilities.javascript.execute",
+        "inputs": {
+          "options": {
+            "code": "return [story1, story2, story3, story4].map(s => ({ title: s.data.title || 'No title', url: s.data.url || `https://news.ycombinator.com/item?id=${s.data.id}`, score: s.data.score || 0, comments: s.data.descendants || 0 }));",
+            "context": {
+              "story1": "{{story1}}",
+              "story2": "{{story2}}",
+              "story3": "{{story3}}",
+              "story4": "{{story4}}"
+            }
+          }
+        },
+        "outputAs": "stories"
+      }
+    ],
+    "returnValue": "{{stories}}",
+    "outputDisplay": {
+      "type": "table",
+      "columns": [
+        {
+          "key": "title",
+          "label": "Title",
+          "type": "text"
+        },
+        {
+          "key": "url",
+          "label": "URL",
+          "type": "link"
+        },
+        {
+          "key": "score",
+          "label": "Score",
+          "type": "number"
+        },
+        {
+          "key": "comments",
+          "label": "Comments",
+          "type": "number"
+        }
+      ]
+    }
+  },
+  "metadata": {
+    "requiresCredentials": []
+  }
+}

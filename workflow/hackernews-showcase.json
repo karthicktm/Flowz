@@ -1,0 +1,53 @@
+{
+  "version": "1.0",
+  "name": "HackerNews Top Stories - New Module Showcase",
+  "description": "Fetches top 20 HackerNews stories using the new dedicated module",
+  "trigger": {
+    "type": "manual",
+    "config": {}
+  },
+  "config": {
+    "steps": [
+      {
+        "id": "step1",
+        "module": "external-apis.hackernews.getTopStories",
+        "inputs": {
+          "options": {
+            "limit": 20,
+            "filterByDate": false
+          }
+        },
+        "outputAs": "stories"
+      }
+    ],
+    "returnValue": "{{stories}}",
+    "outputDisplay": {
+      "type": "table",
+      "columns": [
+        {
+          "key": "title",
+          "label": "Title",
+          "type": "text"
+        },
+        {
+          "key": "url",
+          "label": "URL",
+          "type": "link"
+        },
+        {
+          "key": "score",
+          "label": "Points",
+          "type": "number"
+        },
+        {
+          "key": "descendants",
+          "label": "Comments",
+          "type": "number"
+        }
+      ]
+    }
+  },
+  "metadata": {
+    "requiresCredentials": []
+  }
+}
